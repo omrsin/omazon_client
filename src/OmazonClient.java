@@ -1,3 +1,4 @@
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -33,7 +34,7 @@ public class OmazonClient {
 //	private WebResource buyService;
     private WebResource products;
     private WebResource customers;
-
+    private WebResource orders;
     // A GSON Builder
     private GsonBuilder gsonBuilder;
     private Gson gson;
@@ -66,6 +67,7 @@ public class OmazonClient {
 
         products = service.path("com.omazon.entities.products");
         customers = service.path("com.omazon.entities.customers");
+        orders = service.path("com.omazon.entities.orders");
     }
 
     /**
@@ -87,33 +89,48 @@ public class OmazonClient {
     private String getOutputAsJson(WebResource webResource) {
         return webResource.accept(MediaType.APPLICATION_JSON).get(String.class);
     }
+
     /**
      * Get all products
+     *
      * @return List of all Products
      */
-    public List<Product> getProducts(){
+    public List<Product> getProducts() {
         String response = getOutputAsJson(products);
-        Type collectionType = new TypeToken<List<Product>>(){}.getType();
-        List<Product> p = gson.fromJson(response,collectionType);
+        Type collectionType = new TypeToken<List<Product>>() {
+        }.getType();
+        List<Product> p = gson.fromJson(response, collectionType);
         return p;
     }
+
+    public Product getProductById(int id) {
+        String response = getOutputAsJson(products.path(id+""));
+        Product p = gson.fromJson(response, Product.class);
+        return p;
+    }
+
     /**
      * Add a new product
-     * @param product 
+     *
+     * @param product
      */
-    public void addProduct(Product product){
+    public void addProduct(Product product) {
         products.type(MediaType.APPLICATION_JSON).post(gson.toJson(product));
     }
+
     /**
      * Add a new product
-     * @param product 
+     *
+     * @param product
      */
-    public void updateProduct(Product product){
-        products.path(product.getId()+"").type(MediaType.APPLICATION_JSON).put(gson.toJson(product));
+    public void updateProduct(Product product) {
+        products.path(product.getId() + "").type(MediaType.APPLICATION_JSON).put(gson.toJson(product));
     }
-    public void deleteProcutById(int productId){
-        products.path(productId+"").delete();
+
+    public void deleteProcutById(int productId) {
+        products.path(productId + "").delete();
     }
+
     /**
      * Get all customers
      */
@@ -125,6 +142,7 @@ public class OmazonClient {
         List<Customer> c = gson.fromJson(response, collectionType);
         return c;
     }
+
     /**
      * Get a specific customer by id
      *
@@ -134,6 +152,7 @@ public class OmazonClient {
         String response = getOutputAsJson(customers.path("" + id));
         System.out.println(response);
     }
+
     /**
      * Adds a customer
      *
@@ -142,9 +161,11 @@ public class OmazonClient {
     public void addCustomer(JsonObject customer) {
         customers.type(MediaType.APPLICATION_JSON).post(customer.toString());
     }
+
     public void addCustomer(Customer customer) {
         customers.type(MediaType.APPLICATION_JSON).post(gson.toJson(customer));
     }
+
     /**
      * Updates a customer
      *
@@ -153,9 +174,11 @@ public class OmazonClient {
     public void updateCustomer(JsonObject customer) {
         customers.path(customer.get("id").getAsString()).type(MediaType.APPLICATION_JSON).put(customer.toString());
     }
+
     public void updateCustomer(Customer customer) {
         customers.path(customer.getId() + "").type(MediaType.APPLICATION_JSON).put(gson.toJson(customer));
     }
+
     /**
      * Use this methot to delete particular customer
      *
@@ -164,4 +187,13 @@ public class OmazonClient {
     public void deleteCustomerById(int customerId) {
         customers.path(customerId + "").delete();
     }
+
+    public List<Order> getOrders() {
+        String response = getOutputAsJson(orders);
+        Type collectionType = new TypeToken<List<Order>>() {
+        }.getType();
+        List<Order> p = gson.fromJson(response, collectionType);
+        return p;
+    }
+
 }

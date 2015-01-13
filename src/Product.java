@@ -45,6 +45,23 @@ public class Product {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Product)
+        {
+            Product other = (Product)obj;
+            if(other.id == this.id)
+            {
+                return true;
+            }else{
+                return false;
+            }
+        }
+        
+        return super.equals(obj); //To change body of generated methods, choose Tools | Templates.
+    }
+    
     
     
 }

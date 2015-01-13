@@ -3,6 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
 /**
  *
  * @author floriment
@@ -17,6 +18,10 @@ public class OmazonClientMain {
         CustomersWindow c_window = new CustomersWindow();
         c_window.setBounds(540, 50, 500, 500);
         c_window.setVisible(true);
+
+        OrdersWindow order_window = new OrdersWindow();
+        order_window.setBounds(1000, 50, 700, 500);
+        order_window.setVisible(true);
 
     }
 
