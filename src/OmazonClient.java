@@ -1,4 +1,3 @@
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -104,7 +103,7 @@ public class OmazonClient {
     }
 
     public Product getProductById(int id) {
-        String response = getOutputAsJson(products.path(id+""));
+        String response = getOutputAsJson(products.path(id + ""));
         Product p = gson.fromJson(response, Product.class);
         return p;
     }
@@ -194,6 +193,12 @@ public class OmazonClient {
         }.getType();
         List<Order> p = gson.fromJson(response, collectionType);
         return p;
+    }
+
+    public void addOrder(Order order) {
+        orders.type(MediaType.APPLICATION_JSON).post(gson.toJson(order));
+//        System.out.println(gson.toJson(order));
+
     }
 
 }

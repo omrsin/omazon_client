@@ -3,13 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 /**
  *
  * @author floriment
  */
 import com.sun.javafx.scene.control.skin.FXVK;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -25,6 +25,7 @@ import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -33,6 +34,8 @@ import javax.swing.JPasswordField;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
+import javax.swing.plaf.basic.BasicSplitPaneUI.BasicHorizontalLayoutManager;
 import javax.swing.table.DefaultTableModel;
 
 public class OrdersWindow extends JFrame {
@@ -204,7 +207,6 @@ public class OrdersWindow extends JFrame {
 
         public AddOrderWindow(Order c) {
             super("Add a new order");
-
             selectedProducts = new ArrayList<>();
             if (c == null) {
                 order = new Order();
@@ -213,91 +215,94 @@ public class OrdersWindow extends JFrame {
                 update = true;
             }
             JLabel l = new JLabel();
+            l.setBounds(0, 0, 400, l.getHeight());
             l.setText("	Products :");
-            if (!update) {
-//                Object[] data = client.getProducts().toArray();
-//                JList list = new JList(data);
-//                add(list);
-                JTable productList = new JTable();
-                DefaultTableModel productListModel = new DefaultTableModel() {
-                    @Override
-                    public boolean isCellEditable(int row, int column) {
-                        return false;
+            add(l);
+
+            DefaultTableModel productListModel = new DefaultTableModel() {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
+            JTable productList = new JTable(productListModel) {
+
+                @Override
+                public Class<?> getColumnClass(int column) {
+                    switch (column) {
+                        case 0:
+                            return String.class;
+                        case 1:
+                            return String.class;
+                        default:
+                            return Boolean.class;
                     }
-                };
-                productList.setModel(productListModel);
-                productListModel.setColumnCount(3);
-                productList.getColumnModel().getColumn(0).setPreferredWidth(30);
-                productList.getColumnModel().getColumn(1).setPreferredWidth(100);
-                productList.getColumnModel().getColumn(2).setPreferredWidth(100);
-
-                productListModel.addRow(new Object[]{"<html><b>ID</b></html>",
-                    "<html><b>Product Name</b></html>", "<html><b>Select/Deselect</b></html>"});
-
-                List<Product> listOfProducts = client.getProducts();
-                for (Product p : listOfProducts) {
-                    productListModel.addRow(new Object[]{p.getId(), p.getName(), SELECT_STR});
                 }
 
-                productList.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        JTable target = (JTable) e.getSource();
-                        int productTableRow = target.getSelectedRow();
-                        int productTableColumn = target.getSelectedColumn();
+            };
+            productListModel.addColumn("<html><b>ID</b></html>");
+            productListModel.addColumn("<html><b>Product Name</b></html>");
+            productListModel.addColumn("<html><b>Check</b></html>");
+            productList.getColumnModel().getColumn(0).setPreferredWidth(30);
+            productList.getColumnModel().getColumn(1).setPreferredWidth(100);
+            productList.getColumnModel().getColumn(2).setPreferredWidth(100);
 
-                        if (productTableColumn == 2
-                                && target.getModel()
-                                .getValueAt(productTableRow, productTableColumn)
-                                .equals(SELECT_STR)) {
-                            int id = Integer.parseInt(target.getModel().getValueAt(productTableRow, 0).toString());
-                            selectedProducts.add(client.getProductById(id));
-                            target.getModel().setValueAt(DESELECT_STR, productTableRow, productTableColumn);
-                            System.out.println(selectedProducts);
-                        }
-                        if (productTableColumn == 2
-                                && target.getModel()
-                                .getValueAt(productTableRow, productTableColumn)
-                                .equals(DESELECT_STR)) {
-                            int id = Integer.parseInt(target.getModel().getValueAt(productTableRow, 0).toString());
-                            selectedProducts.remove(client.getProductById(id));
-                            target.getModel().setValueAt(DESELECT_STR, productTableRow, productTableColumn);
-                            System.out.println(selectedProducts);
-                        }
-
-                    }
-                });
-                add(productList);
+            List<Product> listOfProducts = client.getProducts();
+            for (Product p : listOfProducts) {
+                productListModel.addRow(new Object[]{p.getId(), p.getName(), false});
             }
 
+            productList.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    JTable target = (JTable) e.getSource();
+                    int productTableRow = target.getSelectedRow();
+                    int productTableColumn = target.getSelectedColumn();
+
+                    if (productTableColumn == 2
+                            && target.getModel()
+                            .getValueAt(productTableRow, productTableColumn)
+                            .equals(false)) {
+                        int id = Integer.parseInt(target.getModel().getValueAt(productTableRow, 0).toString());
+                        selectedProducts.add(client.getProductById(id));
+                        target.getModel().setValueAt(true, productTableRow, productTableColumn);
+                        System.out.println(selectedProducts);
+                        return;
+                    }
+                    if (productTableColumn == 2
+                            && target.getModel()
+                            .getValueAt(productTableRow, productTableColumn)
+                            .equals(true)) {
+                        int id = Integer.parseInt(target.getModel().getValueAt(productTableRow, 0).toString());
+                        selectedProducts.remove(client.getProductById(id));
+                        target.getModel().setValueAt(false, productTableRow, productTableColumn);
+                        System.out.println(selectedProducts);
+                    }
+
+                }
+            });
+            add(productList);
             JLabel l2 = new JLabel();
             l2.setText("Customer :");
-            if (!update) {
-
-            }
-
+            add(l2);
+            JComboBox<Customer> combo = new JComboBox<>();
+            List<Customer> customers = client.getCustomers();
+            customers.stream().forEach((customer) -> {combo.addItem(customer);});
+            add(combo);
             JButton but = new JButton();
             but.setText(update ? "Update" : "Add new");
-            add(l);
-            add(l2);
             add(but);
             but.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-//                    order.setName(name.getText());
-//                    order.setEmail(email.getText());
-//                    if (update) {
-//                        client.updateOrder(order);
-//                    } else {
-//                        client.addOrder(order);
-//
-//                    }
+                    Order order = new Order(selectedProducts, (Customer)combo.getSelectedItem(), 2, 1);
+                    client.addOrder(order);
                     AddOrderWindow.this.setVisible(false);
                     OrdersWindow.this.setVisible(true);
                     OrdersWindow.this.updateOrdersView();
                 }
             });
-            setLayout(new FlowLayout());
-            setSize(400, 400);
+            setLayout(new FlowLayout(FlowLayout.CENTER));
+            setSize(300, 400);
             setVisible(true);
         }
 

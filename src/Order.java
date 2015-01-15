@@ -25,6 +25,14 @@ public class Order {
         this.shipmentId = shipmentId;
     }
     
+    public Order(List<Product> products, Customer customer, int status, int shipmentId)
+    {
+        this.products = products;
+        this.customer = customer;
+        this.status = status;
+        this.shipmentId = shipmentId;
+    }
+    
     public Order()
     {
         
