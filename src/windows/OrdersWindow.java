@@ -1,3 +1,5 @@
+package windows;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -7,6 +9,10 @@
  *
  * @author floriment
  */
+import client.OmazonClient;
+import model.Product;
+import model.Order;
+import model.Customer;
 import com.sun.javafx.scene.control.skin.FXVK;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -48,8 +54,6 @@ public class OrdersWindow extends JFrame {
 
     public static final String DELETE_STR = "<html><font color=\"red\">Delete</font></html>";
     public static final String EDIT_STR = "<html><font color=\"green\">Edit</font></html>";
-    public static final String SELECT_STR = "<html><font color=\"red\">SELECT</font></html>";
-    public static final String DESELECT_STR = "<html><font color=\"red\">SELECTED</font></html>";
 
     // The tables for shop and cart
     JTable orderTable;
@@ -91,10 +95,10 @@ public class OrdersWindow extends JFrame {
         DefaultTableModel orderTableModel = new DefaultTableModel() {
             @Override
             public boolean isCellEditable(int row, int column) {
-                if (column == 5 || column == 6 || row == 0) {
-                    return false;
-                }
-                return true;
+//                if (column == 5 || column == 6 || row == 0) {
+//                    return false;
+//                }
+                return false;
             }
         };
 
@@ -102,15 +106,13 @@ public class OrdersWindow extends JFrame {
         orderTable.setModel(orderTableModel);
         // The columns are: ID, name, price (for 1 product), available amount,
         // "add to cart" clickable field
-        orderTableModel.setColumnCount(7);
+        orderTableModel.setColumnCount(5);
 
         orderTable.getColumnModel().getColumn(0).setPreferredWidth(30);
         orderTable.getColumnModel().getColumn(1).setPreferredWidth(100);
         orderTable.getColumnModel().getColumn(2).setPreferredWidth(100);
         orderTable.getColumnModel().getColumn(3).setPreferredWidth(50);
         orderTable.getColumnModel().getColumn(4).setPreferredWidth(40);
-        orderTable.getColumnModel().getColumn(5).setPreferredWidth(30);
-        orderTable.getColumnModel().getColumn(6).setPreferredWidth(20);
 
         orderTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -120,40 +122,13 @@ public class OrdersWindow extends JFrame {
                 int orderTableColumn = target.getSelectedColumn();
 
                 // If we're clicking the "Delete" cell
-                if (orderTableColumn == 4
-                        && target.getModel()
-                        .getValueAt(orderTableRow, orderTableColumn)
-                        .equals(DELETE_STR)) {
-                    int id = (int) target.getModel().getValueAt(
-                            orderTableRow, 0);
-//                    client.deleteOrderById(id);
-                    //TODO Delete the order
-                    updateOrdersView();
-                }
-
-                if (orderTableColumn == 3
-                        && target.getModel()
-                        .getValueAt(orderTableRow, orderTableColumn)
-                        .equals(EDIT_STR)) {
-                    int id = (int) target.getModel().getValueAt(
-                            orderTableRow, 0);
-                    String name = (String) target.getModel().getValueAt(orderTableRow, 1);
-                    String email = (String) target.getModel().getValueAt(orderTableRow, 2);
-//                    Order c = new Order(id, name, email);
-//                    AddOrderWindow window = new AddOrderWindow(c);
-//                    OrdersWindow.this.setVisible(false);
-//                    window.setVisible(true);
-                    //TODO:: Add order window
-                    updateOrdersView();
-                }
             }
         });
 
         // The header row
         orderTableModel.addRow(new Object[]{"<html><b>ID</b></html>",
             "<html><b>ShipmentId</b></html>", "<html><b>Order</b></html>",
-            "<html><b>Products</b></html>", "<html><b>Status</b></html>",
-            "<html><b>Edit</b></html>", "<html><b>Delete</b></html>"});
+            "<html><b>Products</b></html>", "<html><b>Status</b></html>"});
 
         firstScrollPane.add(orderTable);
         mainPanel.add(firstScrollPane);
@@ -172,7 +147,17 @@ public class OrdersWindow extends JFrame {
                 win.setVisible(true);
             }
         });
+        JButton shipment = new JButton("Shipments");
+        shipment.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ShipmentWindow window = new ShipmentWindow(client);
+                window.setVisible(true);
+            }
+        });
         bottomPanel.add(addOrder);
+        bottomPanel.add(shipment);
         // For Space after Button
         bottomPanel.add(new JLabel("            "));
         // For displaying Total Price
@@ -194,7 +179,7 @@ public class OrdersWindow extends JFrame {
 
         for (Order c : listOfOrders) {
 
-            orderTableModel.addRow(new Object[]{c.getId(), c.getShipmentId(), c.getCustomer().getName(), c.getProducts().get(0).getName(), c.getStatus(), EDIT_STR, DELETE_STR});
+            orderTableModel.addRow(new Object[]{c.getId(), c.getShipment().getId(), c.getCustomer().getName(), c.getProducts().get(0).getName(), c.getShipment().getWrittenStatus()});
         }
     }
 
@@ -294,7 +279,7 @@ public class OrdersWindow extends JFrame {
             add(but);
             but.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    Order order = new Order(selectedProducts, (Customer)combo.getSelectedItem(), 2, 1);
+                    Order order = new Order(selectedProducts, (Customer)combo.getSelectedItem());
                     client.addOrder(order);
                     AddOrderWindow.this.setVisible(false);
                     OrdersWindow.this.setVisible(true);
@@ -307,4 +292,6 @@ public class OrdersWindow extends JFrame {
         }
 
     }
+    
+
 }

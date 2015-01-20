@@ -1,3 +1,5 @@
+package windows;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -7,6 +9,8 @@
  *
  * @author floriment
  */
+import client.OmazonClient;
+import model.Customer;
 import com.sun.javafx.scene.control.skin.FXVK;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -28,7 +32,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-public class ProductsWindow extends JFrame {
+public class CustomersWindow extends JFrame {
 
     public OmazonClient client;
 
@@ -40,7 +44,7 @@ public class ProductsWindow extends JFrame {
     public static final String EDIT_STR = "<html><font color=\"green\">Edit</font></html>";
 
     // The tables for shop and cart
-    JTable productTable;
+    JTable customerTable;
     JLabel priceLabel;
 
     // The shop and cart contents
@@ -51,21 +55,21 @@ public class ProductsWindow extends JFrame {
     // The ID of this client
     long id;
 
-    public ProductsWindow() {
-        super("Products - Omazon");
+    public CustomersWindow() {
+        super("Customers - Omazon");
         client = new OmazonClient();
         // Exit VM when closing
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS));
         this.setResizable(false);
         JPanel mainPanel = new JPanel();
-        mainPanel.add(new JLabel("Products"));
+        mainPanel.add(new JLabel("Customers"));
         // A refresh button
         JButton refreshShopButton = new JButton("Refresh");
         ActionListener refreshSopAL = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
-                updateProductsView();
+                updateCustomersView();
             }
         };
         refreshShopButton.addActionListener(refreshSopAL);
@@ -75,8 +79,8 @@ public class ProductsWindow extends JFrame {
         ScrollPane firstScrollPane = new ScrollPane();
         firstScrollPane.setBounds(0, 0, 450, 300);
 
-        productTable = new JTable();
-        DefaultTableModel productTableModel = new DefaultTableModel() {
+        customerTable = new JTable();
+        DefaultTableModel customerTableModel = new DefaultTableModel() {
             @Override
             public boolean isCellEditable(int row, int column) {
                 if (column == 3 || column == 4 || row == 0) {
@@ -86,78 +90,76 @@ public class ProductsWindow extends JFrame {
             }
         };
 
-        // Add Click Listener on productTable
-        productTable.setModel(productTableModel);
+        // Add Click Listener on customerTable
+        customerTable.setModel(customerTableModel);
         // The columns are: ID, name, price (for 1 product), available amount,
         // "add to cart" clickable field
-        productTableModel.setColumnCount(5);
+        customerTableModel.setColumnCount(5);
 
-        productTable.getColumnModel().getColumn(0).setPreferredWidth(30);
-        productTable.getColumnModel().getColumn(1).setPreferredWidth(100);
-        productTable.getColumnModel().getColumn(2).setPreferredWidth(120);
-        productTable.getColumnModel().getColumn(3).setPreferredWidth(60);
-        productTable.getColumnModel().getColumn(4).setPreferredWidth(60);
+        customerTable.getColumnModel().getColumn(0).setPreferredWidth(30);
+        customerTable.getColumnModel().getColumn(1).setPreferredWidth(100);
+        customerTable.getColumnModel().getColumn(2).setPreferredWidth(120);
+        customerTable.getColumnModel().getColumn(3).setPreferredWidth(60);
+        customerTable.getColumnModel().getColumn(4).setPreferredWidth(60);
 
-        productTable.addMouseListener(new MouseAdapter() {
+        customerTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 JTable target = (JTable) e.getSource();
-                int productTableRow = target.getSelectedRow();
-                int productTableColumn = target.getSelectedColumn();
+                int customerTableRow = target.getSelectedRow();
+                int customerTableColumn = target.getSelectedColumn();
 
                 // If we're clicking the "Delete" cell
-                if (productTableColumn == 4
+                if (customerTableColumn == 4
                         && target.getModel()
-                        .getValueAt(productTableRow, productTableColumn)
+                        .getValueAt(customerTableRow, customerTableColumn)
                         .equals(DELETE_STR)) {
                     int id = (int) target.getModel().getValueAt(
-                            productTableRow, 0);
-                    client.deleteProcutById(id);
-                    updateProductsView();
+                            customerTableRow, 0);
+                    client.deleteCustomerById(id);
+                    updateCustomersView();
                 }
 
-                if (productTableColumn == 3
+                if (customerTableColumn == 3
                         && target.getModel()
-                        .getValueAt(productTableRow, productTableColumn)
+                        .getValueAt(customerTableRow, customerTableColumn)
                         .equals(EDIT_STR)) {
                     int id = (int) target.getModel().getValueAt(
-                            productTableRow, 0);
-                    String name =  (String) target.getModel().getValueAt(productTableRow, 1);
-                    String description = (String) target.getModel().getValueAt(productTableRow, 2);
-                    Product c = new Product(id,name,description);
-                    AddProductsWindow window = new AddProductsWindow(c);
-//                    ProductsWindow.this.setVisible(false);
-                    window.setLocationRelativeTo(ProductsWindow.this);
+                            customerTableRow, 0);
+                    String name =  (String) target.getModel().getValueAt(customerTableRow, 1);
+                    String email = (String) target.getModel().getValueAt(customerTableRow, 2);
+                    Customer c = new Customer(id,name,email);
+                    AddCustomerWindow window = new AddCustomerWindow(c);
+//                    CustomersWindow.this.setVisible(false);
                     window.setVisible(true);
-                    updateProductsView();
+                    updateCustomersView();
                 }
             }
         });
 
         // The header row
-        productTableModel.addRow(new Object[]{"<html><b>ID</b></html>",
-            "<html><b>Name</b></html>", "<html><b>Description</b></html>",
+        customerTableModel.addRow(new Object[]{"<html><b>ID</b></html>",
+            "<html><b>Name</b></html>", "<html><b>Email</b></html>",
             "<html><b>Edit</b></html>", "<html><b>Delete</b></html>"});
 
-        firstScrollPane.add(productTable);
+        firstScrollPane.add(customerTable);
         mainPanel.add(firstScrollPane);
 
         // Panel to hold clear cart button total price and buy button
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
 
-        JButton addProduct = new JButton("Add new Product!");
-        addProduct.addActionListener(new ActionListener() {
+        JButton addCustomer = new JButton("Add new Customer!");
+        addCustomer.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                AddProductsWindow win = new AddProductsWindow(null);
-//                ProductsWindow.this.setVisible(false);
-                win.setLocationRelativeTo(ProductsWindow.this);
+                AddCustomerWindow win = new AddCustomerWindow(null);
+//                CustomersWindow.this.setVisible(false);
                 win.setVisible(true);
             }
         });
-        bottomPanel.add(addProduct);
+        bottomPanel.add(addCustomer);
         // For Space after Button
         bottomPanel.add(new JLabel("            "));
         // For displaying Total Price
@@ -166,68 +168,67 @@ public class ProductsWindow extends JFrame {
         this.add(mainPanel);
         this.pack();
 
-        List<Product> listOfProducts = client.getProducts();
-        updateProductsView();
+        List<Customer> listOfCustomers = client.getCustomers();
+        updateCustomersView();
         // Get the contents for cart and shop for the first time
     }
 
-    public void updateProductsView() {
-        DefaultTableModel productTableModel = (DefaultTableModel) productTable
+    public void updateCustomersView() {
+        DefaultTableModel customerTableModel = (DefaultTableModel) customerTable
                 .getModel();
-        productTableModel.setRowCount(1);
-        List<Product> listOfProducts = client.getProducts();
+        customerTableModel.setRowCount(1);
+        List<Customer> listOfCustomers = client.getCustomers();
 
-        for (Product c : listOfProducts) {
-            productTableModel.addRow(new Object[]{c.getId(), c.getName(), c.getDescription(), EDIT_STR, DELETE_STR});
+        for (Customer c : listOfCustomers) {
+            customerTableModel.addRow(new Object[]{c.getId(), c.getName(), c.getEmail(), EDIT_STR, DELETE_STR});
         }
     }
 
-    public class AddProductsWindow extends JFrame {
+    public class AddCustomerWindow extends JFrame {
 
-        Product product;
+        Customer customer;
         boolean update = false;
 
-        public AddProductsWindow(Product c) {
-            super("Add a new product");
+        public AddCustomerWindow(Customer c) {
+            super("Add a new customer");
 
             if (c == null) {
-                product = new Product();
+                customer = new Customer();
             } else {
-                product = c;
+                customer = c;
                 update = true;
             }
             JLabel l = new JLabel();
             l.setText("	Name :");
-            JTextField name = new JTextField(product.getName(), 30);
+            JTextField name = new JTextField(customer.getName(), 30);
             JLabel l2 = new JLabel();
-            l2.setText(" Description :");
-            JTextField description = new JTextField(product.getDescription(), 30);
+            l2.setText("	Email :");
+            JTextField email = new JTextField(customer.getEmail(), 30);
             JButton but = new JButton();
             but.setText(update?"Update":"Add new");
             add(l);
             add(name);
             add(l2);
-            add(description);
+            add(email);
             add(but);
             but.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    product.setName(name.getText());
-                    product.setDescription(description.getText());
+                    customer.setName(name.getText());
+                    customer.setEmail(email.getText());
                     if (update) {
-                        client.updateProduct(product);
+                        client.updateCustomer(customer);
                     } else {
-                        client.addProduct(product);
+                        client.addCustomer(customer);
 
                     }
-                    AddProductsWindow.this.setVisible(false);
-                    ProductsWindow.this.setVisible(true);
-                    ProductsWindow.this.updateProductsView();
+                    AddCustomerWindow.this.setVisible(false);
+                    CustomersWindow.this.setVisible(true);
+                    CustomersWindow.this.updateCustomersView();
                 }
             });
             setLayout(new FlowLayout());
             setSize(400, 400);
             setVisible(true);
-
         }
 
     }

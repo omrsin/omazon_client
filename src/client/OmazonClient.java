@@ -1,3 +1,8 @@
+package client;
+
+import model.Product;
+import model.Order;
+import model.Customer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -13,6 +18,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import javax.ws.rs.core.MediaType;
+import model.Shipment;
 
 /**
  * This class enables us to use the REST protocol with JSON for our clients.
@@ -34,28 +40,10 @@ public class OmazonClient {
     private WebResource products;
     private WebResource customers;
     private WebResource orders;
+    private WebResource shipments;
     // A GSON Builder
     private GsonBuilder gsonBuilder;
     private Gson gson;
-
-    public static void main(String[] args) {
-        OmazonClient client = new OmazonClient();
-        client.getCustomers();
-        //adding a new customer
-        JsonObject customer = new JsonObject();
-        customer.add("name", new JsonPrimitive("Omar"));
-        customer.add("email", new JsonPrimitive("omar@gmail.com"));
-        client.addCustomer(customer);
-        System.out.println("the updated list");
-        client.getCustomers();
-        JsonObject customerToUpdate = new JsonObject();
-        customerToUpdate.add("id", new JsonPrimitive("1"));
-        customerToUpdate.add("name", new JsonPrimitive("Omar"));
-        customerToUpdate.add("email", new JsonPrimitive("klinakuf@gmail.com"));
-        client.updateCustomer(customerToUpdate);
-        client.getCustomers();
-
-    }
 
     // Connect using REST
     public OmazonClient() {
@@ -67,6 +55,7 @@ public class OmazonClient {
         products = service.path("com.omazon.entities.products");
         customers = service.path("com.omazon.entities.customers");
         orders = service.path("com.omazon.entities.orders");
+        shipments = service.path("com.omazon.entities.shipments");
     }
 
     /**
@@ -201,4 +190,15 @@ public class OmazonClient {
 
     }
 
+    public List<Shipment> getShipments() {
+        String response = getOutputAsJson(shipments);
+        Type collectionType = new TypeToken<List<Shipment>>() {
+        }.getType();
+        List<Shipment> p = gson.fromJson(response, collectionType);
+        return p;
+    }
+
+    public void editShipment(Shipment shipment) {
+        shipments.path(shipment.getId() + "").type(MediaType.APPLICATION_JSON).put(gson.toJson(shipment));
+    }
 }

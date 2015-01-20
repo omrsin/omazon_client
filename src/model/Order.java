@@ -1,4 +1,7 @@
+package model;
 
+
+import model.Customer;
 import java.util.List;
 
 /*
@@ -14,23 +17,23 @@ import java.util.List;
 public class Order {
     
     private int id;
-    private int status;
-    private int shipmentId;
+    private Shipment shipment;
+
+    public Shipment getShipment() {
+        return shipment;
+    }
+
+    public void setShipment(Shipment shipment) {
+        this.shipment = shipment;
+    }
     private Customer customer;
     private List<Product> products;
 
-    public Order(int id, int status, int shipmentId) {
-        this.id = id;
-        this.status = status;
-        this.shipmentId = shipmentId;
-    }
-    
-    public Order(List<Product> products, Customer customer, int status, int shipmentId)
+       
+    public Order(List<Product> products, Customer customer)
     {
         this.products = products;
         this.customer = customer;
-        this.status = status;
-        this.shipmentId = shipmentId;
     }
     
     public Order()
@@ -46,21 +49,6 @@ public class Order {
         this.id = id;
     }
 
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public int getShipmentId() {
-        return shipmentId;
-    }
-
-    public void setShipmentId(int shipmentId) {
-        this.shipmentId = shipmentId;
-    }
 
     public Customer getCustomer() {
         return customer;
