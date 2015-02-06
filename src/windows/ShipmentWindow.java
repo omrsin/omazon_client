@@ -39,14 +39,10 @@ public class ShipmentWindow extends JFrame {
     private List<Shipment> shipments;
     private OmazonClient client;
 
-    public static void main(String[] args) {
-//        new ShipmentWindow();
-    }
-
     public ShipmentWindow(OmazonClient client) {
         super("Shipments");
         this.client = client;
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 //        getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
         setResizable(false);
         setSize(500, 300);
@@ -97,10 +93,12 @@ public class ShipmentWindow extends JFrame {
         table.getColumnModel().getColumn(1).setHeaderValue("Status (Check delivered)");
 
         List<Shipment> list = client.getShipments();
-        for (Shipment p : list) {
-            boolean result;
-            result = p.getStatus() != 0;
-            tableModel.addRow(new Object[]{p.getId(),result});
+        if (list != null) {
+            for (Shipment p : list) {
+                boolean result;
+                result = p.getStatus() != 0;
+                tableModel.addRow(new Object[]{p.getId(), result});
+            }
         }
 
         table.addMouseListener(new MouseAdapter() {

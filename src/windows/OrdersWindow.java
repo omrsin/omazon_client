@@ -14,6 +14,7 @@ import model.Product;
 import model.Order;
 import model.Customer;
 import com.sun.javafx.scene.control.skin.FXVK;
+import com.sun.javafx.scene.control.skin.VirtualFlow;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
@@ -44,9 +45,10 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.basic.BasicSplitPaneUI.BasicHorizontalLayoutManager;
 import javax.swing.table.DefaultTableModel;
 
-public class OrdersWindow extends JFrame {
+public class OrdersWindow extends JFrame implements Window {
 
     public OmazonClient client;
+    private List<JButton> buttons = new ArrayList<>();
 
     // Dimensions of the window.
     public static final int WINDOW_WIDTH = 500;
@@ -67,9 +69,10 @@ public class OrdersWindow extends JFrame {
     // The ID of this client
     long id;
 
-    public OrdersWindow() {
+    public OrdersWindow(OmazonClient client) {
         super("Orders - Omazon");
-        client = new OmazonClient();
+        this.client = client;
+        this.client.subscribeForOnOffNotification(this);
         // Exit VM when closing
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS));
@@ -78,6 +81,7 @@ public class OrdersWindow extends JFrame {
         mainPanel.add(new JLabel("Orders"));
         // A refresh button
         JButton refreshShopButton = new JButton("Refresh");
+        buttons.add(refreshShopButton);
         ActionListener refreshSopAL = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
@@ -138,6 +142,7 @@ public class OrdersWindow extends JFrame {
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
 
         JButton addOrder = new JButton("Add new Order!");
+        buttons.add(addOrder);
         addOrder.addActionListener(new ActionListener() {
 
             @Override
@@ -165,10 +170,25 @@ public class OrdersWindow extends JFrame {
         mainPanel.setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
         this.add(mainPanel);
         this.pack();
-
-        List<Order> listOfOrders = client.getOrders();
         updateOrdersView();
         // Get the contents for cart and shop for the first time
+    }
+
+    @Override
+    public void online(boolean online) {
+        updateOrdersView();
+        if (online) {
+
+            for (JButton button : buttons) {
+                button.setEnabled(true);
+            }
+        } else {
+            for (JButton button : buttons) {
+                button.setEnabled(false);
+            }
+
+        }
+
     }
 
     public void updateOrdersView() {
@@ -176,7 +196,9 @@ public class OrdersWindow extends JFrame {
                 .getModel();
         orderTableModel.setRowCount(1);
         List<Order> listOfOrders = client.getOrders();
-
+        if (listOfOrders == null) {
+            return;
+        }
         for (Order c : listOfOrders) {
 
             orderTableModel.addRow(new Object[]{c.getId(), c.getShipment().getId(), c.getCustomer().getName(), c.getProducts().get(0).getName(), c.getShipment().getWrittenStatus()});
@@ -272,14 +294,17 @@ public class OrdersWindow extends JFrame {
             add(l2);
             JComboBox<Customer> combo = new JComboBox<>();
             List<Customer> customers = client.getCustomers();
-            customers.stream().forEach((customer) -> {combo.addItem(customer);});
+            customers.stream().forEach((customer) -> {
+                combo.addItem(customer);
+            });
             add(combo);
             JButton but = new JButton();
+            buttons.add(but);
             but.setText(update ? "Update" : "Add new");
             add(but);
             but.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    Order order = new Order(selectedProducts, (Customer)combo.getSelectedItem());
+                    Order order = new Order(selectedProducts, (Customer) combo.getSelectedItem());
                     client.addOrder(order);
                     AddOrderWindow.this.setVisible(false);
                     OrdersWindow.this.setVisible(true);
@@ -292,6 +317,5 @@ public class OrdersWindow extends JFrame {
         }
 
     }
-    
 
 }

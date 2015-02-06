@@ -20,6 +20,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -32,9 +33,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-public class ProductsWindow extends JFrame {
+public class ProductsWindow extends JFrame implements Window {
 
     public OmazonClient client;
+    private List<JButton> buttons = new ArrayList<>();
 
     // Dimensions of the window.
     public static final int WINDOW_WIDTH = 500;
@@ -55,9 +57,10 @@ public class ProductsWindow extends JFrame {
     // The ID of this client
     long id;
 
-    public ProductsWindow() {
+    public ProductsWindow(OmazonClient client) {
         super("Products - Omazon");
-        client = new OmazonClient();
+        this.client = client;
+        this.client.subscribeForOnOffNotification(this);
         // Exit VM when closing
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS));
@@ -66,6 +69,7 @@ public class ProductsWindow extends JFrame {
         mainPanel.add(new JLabel("Products"));
         // A refresh button
         JButton refreshShopButton = new JButton("Refresh");
+        buttons.add(refreshShopButton);
         ActionListener refreshSopAL = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
@@ -126,9 +130,9 @@ public class ProductsWindow extends JFrame {
                         .equals(EDIT_STR)) {
                     int id = (int) target.getModel().getValueAt(
                             productTableRow, 0);
-                    String name =  (String) target.getModel().getValueAt(productTableRow, 1);
+                    String name = (String) target.getModel().getValueAt(productTableRow, 1);
                     String description = (String) target.getModel().getValueAt(productTableRow, 2);
-                    Product c = new Product(id,name,description);
+                    Product c = new Product(id, name, description);
                     AddProductsWindow window = new AddProductsWindow(c);
 //                    ProductsWindow.this.setVisible(false);
                     window.setLocationRelativeTo(ProductsWindow.this);
@@ -151,6 +155,7 @@ public class ProductsWindow extends JFrame {
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
 
         JButton addProduct = new JButton("Add new Product!");
+        buttons.add(addProduct);
         addProduct.addActionListener(new ActionListener() {
 
             @Override
@@ -170,9 +175,25 @@ public class ProductsWindow extends JFrame {
         this.add(mainPanel);
         this.pack();
 
-        List<Product> listOfProducts = client.getProducts();
         updateProductsView();
         // Get the contents for cart and shop for the first time
+    }
+
+    @Override
+    public void online(boolean online) {
+        updateProductsView();
+        if (online) {
+
+            for (JButton button : buttons) {
+                button.setEnabled(true);
+            }
+        } else {
+            for (JButton button : buttons) {
+                button.setEnabled(false);
+            }
+
+        }
+
     }
 
     public void updateProductsView() {
@@ -180,7 +201,9 @@ public class ProductsWindow extends JFrame {
                 .getModel();
         productTableModel.setRowCount(1);
         List<Product> listOfProducts = client.getProducts();
-
+        if(listOfProducts == null){
+            return;
+        }
         for (Product c : listOfProducts) {
             productTableModel.addRow(new Object[]{c.getId(), c.getName(), c.getDescription(), EDIT_STR, DELETE_STR});
         }
@@ -207,7 +230,8 @@ public class ProductsWindow extends JFrame {
             l2.setText(" Description :");
             JTextField description = new JTextField(product.getDescription(), 30);
             JButton but = new JButton();
-            but.setText(update?"Update":"Add new");
+            buttons.add(but);
+            but.setText(update ? "Update" : "Add new");
             add(l);
             add(name);
             add(l2);

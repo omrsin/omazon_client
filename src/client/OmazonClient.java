@@ -15,47 +15,172 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import java.lang.reflect.Type;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Hashtable;
 import java.util.List;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.swing.JButton;
 import javax.ws.rs.core.MediaType;
 import model.Shipment;
+import windows.Window;
 
 /**
  * This class enables us to use the REST protocol with JSON for our clients.
  *
  * @author floriment
  */
-public class OmazonClient {
+public class OmazonClient extends Thread {
 
     // The URI to use
     public static final String REST_URI = "http://localhost:8080/omazon/";
 
-    // All the resources
-//	private WebResource identifyService;
-//	private WebResource stockService;
-//	private WebResource shoppingCartService;
-//	private WebResource addProductToShoppingCartService;
-//	private WebResource clearShoppingCartService;
-//	private WebResource buyService;
-    private WebResource products;
-    private WebResource customers;
-    private WebResource orders;
-    private WebResource shipments;
+    private final WebResource products;
+    private final WebResource customers;
+    private final WebResource orders;
+    private final WebResource shipments;
     // A GSON Builder
     private GsonBuilder gsonBuilder;
-    private Gson gson;
+    private final Gson gson;
+    private Context ctx;
+    private ConnectionFactory connectionFactory;
+    private Connection connection;
+    private SecureRandom random = new SecureRandom();
+    private String userName;
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String nextSessionId() {
+        return new BigInteger(130, random).toString(32);
+    }
+
+    public ConnectionFactory getConnectionFactory() {
+        return connectionFactory;
+    }
+
+    public void setConnectionFactory(ConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
+    }
+
+    public Context getCtx() {
+        return ctx;
+    }
+
+    public void setCtx(Context ctx) {
+        this.ctx = ctx;
+    }
+
+    private boolean online = true;
+
+    private List<Window> windowsToNotify = new ArrayList<>();
+
+    public List<Window> getDisableButtons() {
+        return windowsToNotify;
+    }
+
+    public void subscribeForOnOffNotification(Window window) {
+        windowsToNotify.add(window);
+    }
+
+    private List<Shipment> shipmentsSnapshot;
+    private List<Customer> customersSnapshot;
+
+    public List<Shipment> getShipmentsSnapshot() {
+        return shipmentsSnapshot;
+    }
+
+    public void setShipmentsSnapshot(List<Shipment> shipmentsSnapshot) {
+        this.shipmentsSnapshot = shipmentsSnapshot;
+    }
+
+    public List<Customer> getCustomersSnapshot() {
+        return customersSnapshot;
+    }
+
+    public void setCustomersSnapshot(List<Customer> customersSnapshot) {
+        this.customersSnapshot = customersSnapshot;
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOnline(boolean online) {
+        this.online = online;
+        if (this.online) {
+            for (Window window : windowsToNotify) {
+                window.online(true);
+            }
+        } else {
+            for (Window window : windowsToNotify) {
+                window.online(false);
+            }
+        }
+    }
 
     // Connect using REST
-    public OmazonClient() {
+    public OmazonClient() throws JMSException {
         ClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);
+        userName = nextSessionId();
         WebResource service = client.resource(REST_URI).path("webresources");
-        gson = new Gson();
+        Hashtable table = new Hashtable();
+//        table.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.appserv.naming.S1ASCtxFactory");
+        table.put(Context.PROVIDER_URL, "iiop://127.0.0.1:3700");
+        try {
+            ctx = new InitialContext(table);
+            connectionFactory = (ConnectionFactory) lookup("jms/__defaultConnectionFactory");
+            connection = connectionFactory.createConnection();
+            connection.start();
+        } catch (NamingException ex) {
+            ex.printStackTrace();
+        }
 
+        gson = new Gson();
         products = service.path("com.omazon.entities.products");
         customers = service.path("com.omazon.entities.customers");
         orders = service.path("com.omazon.entities.orders");
         shipments = service.path("com.omazon.entities.shipments");
+
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
+    public void run() {
+        new ClNewListener(this).start();
+        new OmazonProducer(this, "jms/svNew", userName).start();
+        while(true){
+            
+        }
+    }
+
+    public Object lookup(String url) {
+        try {
+            return ctx.lookup(url);
+        } catch (NamingException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -84,6 +209,9 @@ public class OmazonClient {
      * @return List of all Products
      */
     public List<Product> getProducts() {
+        if (!isOnline()) {
+            return null;
+        }
         String response = getOutputAsJson(products);
         Type collectionType = new TypeToken<List<Product>>() {
         }.getType();
@@ -123,11 +251,15 @@ public class OmazonClient {
      * Get all customers
      */
     public List<Customer> getCustomers() {
+        if (!isOnline()) {
+            return customersSnapshot;
+        }
         String response = getOutputAsJson(customers);
         Type collectionType;
         collectionType = new TypeToken<List<Customer>>() {
         }.getType();
         List<Customer> c = gson.fromJson(response, collectionType);
+        customersSnapshot = c;
         return c;
     }
 
@@ -177,6 +309,10 @@ public class OmazonClient {
     }
 
     public List<Order> getOrders() {
+
+        if (!isOnline()) {
+            return null;
+        }
         String response = getOutputAsJson(orders);
         Type collectionType = new TypeToken<List<Order>>() {
         }.getType();
@@ -191,14 +327,19 @@ public class OmazonClient {
     }
 
     public List<Shipment> getShipments() {
+        if (!isOnline()) {
+            return shipmentsSnapshot;
+        }
         String response = getOutputAsJson(shipments);
         Type collectionType = new TypeToken<List<Shipment>>() {
         }.getType();
         List<Shipment> p = gson.fromJson(response, collectionType);
-        return p;
+        shipmentsSnapshot = p;
+        return shipmentsSnapshot;
     }
 
     public void editShipment(Shipment shipment) {
         shipments.path(shipment.getId() + "").type(MediaType.APPLICATION_JSON).put(gson.toJson(shipment));
     }
+
 }

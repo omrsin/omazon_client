@@ -20,6 +20,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -32,9 +33,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-public class CustomersWindow extends JFrame {
+public class CustomersWindow extends JFrame implements Window{
 
     public OmazonClient client;
+    private List<JButton> buttons = new ArrayList<>();
 
     // Dimensions of the window.
     public static final int WINDOW_WIDTH = 500;
@@ -55,9 +57,10 @@ public class CustomersWindow extends JFrame {
     // The ID of this client
     long id;
 
-    public CustomersWindow() {
+    public CustomersWindow(OmazonClient client) {
         super("Customers - Omazon");
-        client = new OmazonClient();
+        this.client = client;
+        this.client.subscribeForOnOffNotification(this);
         // Exit VM when closing
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS));
@@ -73,7 +76,22 @@ public class CustomersWindow extends JFrame {
             }
         };
         refreshShopButton.addActionListener(refreshSopAL);
+        JButton onOffButton = new JButton("Switch to Offline");
+        ActionListener onOffListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                client.setOnline(!client.isOnline());
+                if (client.isOnline()) {
+                    ((JButton) e.getSource()).setText("Switch to Offline");
+                }else{
+                    ((JButton)e.getSource()).setText("Switch to Online");
+                }
+                        
+            }
+        };
+        onOffButton.addActionListener(onOffListener);
         mainPanel.add(refreshShopButton);
+        mainPanel.add(onOffButton);
 
         // Add tables inside of scrollPanes
         ScrollPane firstScrollPane = new ScrollPane();
@@ -114,6 +132,10 @@ public class CustomersWindow extends JFrame {
                         && target.getModel()
                         .getValueAt(customerTableRow, customerTableColumn)
                         .equals(DELETE_STR)) {
+                    if(!client.isOnline())
+                    {
+                        return;
+                    }
                     int id = (int) target.getModel().getValueAt(
                             customerTableRow, 0);
                     client.deleteCustomerById(id);
@@ -126,9 +148,12 @@ public class CustomersWindow extends JFrame {
                         .equals(EDIT_STR)) {
                     int id = (int) target.getModel().getValueAt(
                             customerTableRow, 0);
-                    String name =  (String) target.getModel().getValueAt(customerTableRow, 1);
+                    if(!client.isOnline()){
+                        return;
+                    }
+                    String name = (String) target.getModel().getValueAt(customerTableRow, 1);
                     String email = (String) target.getModel().getValueAt(customerTableRow, 2);
-                    Customer c = new Customer(id,name,email);
+                    Customer c = new Customer(id, name, email);
                     AddCustomerWindow window = new AddCustomerWindow(c);
 //                    CustomersWindow.this.setVisible(false);
                     window.setVisible(true);
@@ -150,6 +175,7 @@ public class CustomersWindow extends JFrame {
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
 
         JButton addCustomer = new JButton("Add new Customer!");
+        buttons.add(addCustomer);
         addCustomer.addActionListener(new ActionListener() {
 
             @Override
@@ -184,6 +210,25 @@ public class CustomersWindow extends JFrame {
         }
     }
 
+    @Override
+    public void online(boolean online) {
+        updateCustomersView();
+
+        if(online){
+            for(JButton button: buttons)
+            {
+                button.setEnabled(true);
+            }
+        }else{
+            for(JButton button : buttons)
+            {
+                button.setEnabled(false);
+            }
+        }
+        
+        
+    }
+
     public class AddCustomerWindow extends JFrame {
 
         Customer customer;
@@ -205,7 +250,7 @@ public class CustomersWindow extends JFrame {
             l2.setText("	Email :");
             JTextField email = new JTextField(customer.getEmail(), 30);
             JButton but = new JButton();
-            but.setText(update?"Update":"Add new");
+            but.setText(update ? "Update" : "Add new");
             add(l);
             add(name);
             add(l2);
