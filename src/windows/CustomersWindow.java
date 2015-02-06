@@ -10,6 +10,8 @@ package windows;
  * @author floriment
  */
 import client.OmazonClient;
+import client.OmazonProducer;
+import client.listeners.ClNewListener;
 import model.Customer;
 import com.sun.javafx.scene.control.skin.FXVK;
 import java.awt.BorderLayout;
@@ -33,7 +35,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-public class CustomersWindow extends JFrame implements Window{
+public class CustomersWindow extends JFrame implements Window {
 
     public OmazonClient client;
     private List<JButton> buttons = new ArrayList<>();
@@ -72,7 +74,9 @@ public class CustomersWindow extends JFrame implements Window{
         ActionListener refreshSopAL = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
-                updateCustomersView();
+                client.getClReady().interrupt();
+                new ClNewListener(client).start();
+                new OmazonProducer(client, "jms/svQuery", client.getUserName()).start();
             }
         };
         refreshShopButton.addActionListener(refreshSopAL);
@@ -83,10 +87,10 @@ public class CustomersWindow extends JFrame implements Window{
                 client.setOnline(!client.isOnline());
                 if (client.isOnline()) {
                     ((JButton) e.getSource()).setText("Switch to Offline");
-                }else{
-                    ((JButton)e.getSource()).setText("Switch to Online");
+                } else {
+                    ((JButton) e.getSource()).setText("Switch to Online");
                 }
-                        
+
             }
         };
         onOffButton.addActionListener(onOffListener);
@@ -132,8 +136,7 @@ public class CustomersWindow extends JFrame implements Window{
                         && target.getModel()
                         .getValueAt(customerTableRow, customerTableColumn)
                         .equals(DELETE_STR)) {
-                    if(!client.isOnline())
-                    {
+                    if (!client.isOnline()) {
                         return;
                     }
                     int id = (int) target.getModel().getValueAt(
@@ -148,7 +151,7 @@ public class CustomersWindow extends JFrame implements Window{
                         .equals(EDIT_STR)) {
                     int id = (int) target.getModel().getValueAt(
                             customerTableRow, 0);
-                    if(!client.isOnline()){
+                    if (!client.isOnline()) {
                         return;
                     }
                     String name = (String) target.getModel().getValueAt(customerTableRow, 1);
@@ -214,19 +217,16 @@ public class CustomersWindow extends JFrame implements Window{
     public void online(boolean online) {
         updateCustomersView();
 
-        if(online){
-            for(JButton button: buttons)
-            {
+        if (online) {
+            for (JButton button : buttons) {
                 button.setEnabled(true);
             }
-        }else{
-            for(JButton button : buttons)
-            {
+        } else {
+            for (JButton button : buttons) {
                 button.setEnabled(false);
             }
         }
-        
-        
+
     }
 
     public class AddCustomerWindow extends JFrame {

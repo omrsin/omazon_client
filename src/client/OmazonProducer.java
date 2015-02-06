@@ -41,6 +41,7 @@ public class OmazonProducer extends Thread {
             TextMessage msg = session.createTextMessage(text);
             producer.send(msg);
             session.close();
+            producer.close();
         } catch (Exception ex) {
             ex.printStackTrace();
         }

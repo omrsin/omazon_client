@@ -1,5 +1,7 @@
-package client;
+package client.listeners;
 
+import client.OmazonClient;
+import client.OmazonProducer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.Connection;
@@ -28,24 +30,56 @@ public abstract class ClientListener extends Thread implements MessageListener {
 
     OmazonClient client;
     String topicName;
+    OmazonProducer producer;
+    Session session;
+    Topic topic;
+    MessageConsumer consumer;
+    
+    public ClientListener(OmazonClient client, String topicName, boolean clready)
+    {
+         this.client = client;
+        this.topicName = topicName;
+        if(clready)
+        {
+            this.client.setClReady(this);
+        }
+    }
 
     public ClientListener(OmazonClient client, String topicName) {
         this.client = client;
         this.topicName = topicName;
     }
 
+    public ClientListener(OmazonClient client, String topicName, OmazonProducer producer) {
+        this.client = client;
+        this.topicName = topicName;
+        this.producer = producer;
+    }
+
     @Override
     public void run() {
         System.out.println("Thread Listener Started on Topic" + topicName);
         try {
-            Session session = client.getConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Topic topic = (Topic) client.lookup(topicName);
-            MessageConsumer consumer = session.createConsumer(topic);
+            session = client.getConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
+            topic = (Topic) client.lookup(topicName);
+            consumer = session.createConsumer(topic);
             consumer.setMessageListener(this);
-            while (true) {
+            if (producer != null) {
+                producer.start();
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            while (true && !this.isInterrupted()) {
+            }
+            throw new InterruptedException("thread Interrupted");
+        } catch (InterruptedException ex) {
+            try {
+                session.close();
+                consumer.close();
+            } catch (JMSException ex2) {
+                Logger.getLogger(ClientListener.class.getName()).log(Level.SEVERE, null, ex);
+            }
+//            ex.printStackTrace();
+        } catch (JMSException ex) {
+            Logger.getLogger(ClientListener.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -68,6 +102,7 @@ public abstract class ClientListener extends Thread implements MessageListener {
         }
 
     }
+
     public abstract void doOperation(String message);
 
 }

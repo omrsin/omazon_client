@@ -1,5 +1,7 @@
 package client;
 
+import client.listeners.ClNewListener;
+import client.listeners.ClientListener;
 import model.Product;
 import model.Order;
 import model.Customer;
@@ -54,8 +56,19 @@ public class OmazonClient extends Thread {
     private Connection connection;
     private SecureRandom random = new SecureRandom();
     private String userName;
+    private ClientListener clReady;
 
-    public String getUserName() {
+    public ClientListener getClReady() {
+        return clReady;
+    }
+
+    public void setClReady(ClientListener clReady) {
+        this.clReady = clReady;
+    }
+
+    private boolean lock = false;
+
+    public synchronized String getUserName() {
         return userName;
     }
 
@@ -86,6 +99,14 @@ public class OmazonClient extends Thread {
     private boolean online = true;
 
     private List<Window> windowsToNotify = new ArrayList<>();
+
+    public void setWindowsToNotify(List<Window> windowsToNotify) {
+        this.windowsToNotify = windowsToNotify;
+    }
+    
+    public List<Window> getWindowsToNotify(){
+        return windowsToNotify;
+    }
 
     public List<Window> getDisableButtons() {
         return windowsToNotify;
@@ -118,13 +139,31 @@ public class OmazonClient extends Thread {
         return online;
     }
 
-    public void setOnline(boolean online) {
-        this.online = online;
-        if (this.online) {
+    public void setLock(boolean value) {
+        this.lock = value;
+        if (!this.lock) {
             for (Window window : windowsToNotify) {
                 window.online(true);
             }
         } else {
+            for (Window window : windowsToNotify) {
+                window.online(false);
+            }
+        }
+    }
+
+    public void setOnline(boolean online) {
+        if (lock) {
+            return;
+        }
+        this.online = online;
+        if (this.online) {
+            new ClNewListener(this).start();
+            new OmazonProducer(this, "jms/svNew", userName).start();
+
+        } else {
+            new OmazonProducer(this,"jms/svOffline", userName).start();
+            clReady.interrupt();
             for (Window window : windowsToNotify) {
                 window.online(false);
             }
@@ -169,8 +208,8 @@ public class OmazonClient extends Thread {
     public void run() {
         new ClNewListener(this).start();
         new OmazonProducer(this, "jms/svNew", userName).start();
-        while(true){
-            
+        while (true) {
+
         }
     }
 
@@ -340,6 +379,18 @@ public class OmazonClient extends Thread {
 
     public void editShipment(Shipment shipment) {
         shipments.path(shipment.getId() + "").type(MediaType.APPLICATION_JSON).put(gson.toJson(shipment));
+    }
+
+    public synchronized void lock() {
+        setLock(true);
+    }
+
+    public void getLatest() {
+        //something to happen
+    }
+
+    public synchronized void unlock() {
+        setLock(false);
     }
 
 }
