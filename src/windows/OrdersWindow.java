@@ -80,16 +80,16 @@ public class OrdersWindow extends JFrame implements Window {
         JPanel mainPanel = new JPanel();
         mainPanel.add(new JLabel("Orders"));
         // A refresh button
-        JButton refreshShopButton = new JButton("Refresh");
-        buttons.add(refreshShopButton);
-        ActionListener refreshSopAL = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                updateOrdersView();
-            }
-        };
-        refreshShopButton.addActionListener(refreshSopAL);
-        mainPanel.add(refreshShopButton);
+//        JButton refreshShopButton = new JButton("Refresh");
+//        buttons.add(refreshShopButton);
+//        ActionListener refreshSopAL = new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent ae) {
+//                updateOrdersView();
+//            }
+//        };
+//        refreshShopButton.addActionListener(refreshSopAL);
+//        mainPanel.add(refreshShopButton);
 
         // Add tables inside of scrollPanes
         ScrollPane firstScrollPane = new ScrollPane();
@@ -176,9 +176,8 @@ public class OrdersWindow extends JFrame implements Window {
 
     @Override
     public void online(boolean online) {
-        updateOrdersView();
         if (online) {
-
+            updateOrdersView();
             for (JButton button : buttons) {
                 button.setEnabled(true);
             }

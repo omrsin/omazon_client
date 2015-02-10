@@ -68,16 +68,16 @@ public class ProductsWindow extends JFrame implements Window {
         JPanel mainPanel = new JPanel();
         mainPanel.add(new JLabel("Products"));
         // A refresh button
-        JButton refreshShopButton = new JButton("Refresh");
-        buttons.add(refreshShopButton);
-        ActionListener refreshSopAL = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                updateProductsView();
-            }
-        };
-        refreshShopButton.addActionListener(refreshSopAL);
-        mainPanel.add(refreshShopButton);
+//        JButton refreshShopButton = new JButton("Refresh");
+//        buttons.add(refreshShopButton);
+//        ActionListener refreshSopAL = new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent ae) {
+//                updateProductsView();
+//            }
+//        };
+//        refreshShopButton.addActionListener(refreshSopAL);
+//        mainPanel.add(refreshShopButton);
 
         // Add tables inside of scrollPanes
         ScrollPane firstScrollPane = new ScrollPane();
@@ -181,9 +181,8 @@ public class ProductsWindow extends JFrame implements Window {
 
     @Override
     public void online(boolean online) {
-        updateProductsView();
         if (online) {
-
+            updateProductsView();
             for (JButton button : buttons) {
                 button.setEnabled(true);
             }
@@ -201,7 +200,7 @@ public class ProductsWindow extends JFrame implements Window {
                 .getModel();
         productTableModel.setRowCount(1);
         List<Product> listOfProducts = client.getProducts();
-        if(listOfProducts == null){
+        if (listOfProducts == null) {
             return;
         }
         for (Product c : listOfProducts) {

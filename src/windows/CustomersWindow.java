@@ -74,6 +74,7 @@ public class CustomersWindow extends JFrame implements Window {
         ActionListener refreshSopAL = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
+                client.setLock(true);
                 client.getClReady().interrupt();
                 new ClNewListener(client).start();
                 new OmazonProducer(client, "jms/svQuery", client.getUserName()).start();
@@ -81,16 +82,11 @@ public class CustomersWindow extends JFrame implements Window {
         };
         refreshShopButton.addActionListener(refreshSopAL);
         JButton onOffButton = new JButton("Switch to Offline");
+        client.setOnOffButton(onOffButton);
         ActionListener onOffListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 client.setOnline(!client.isOnline());
-                if (client.isOnline()) {
-                    ((JButton) e.getSource()).setText("Switch to Offline");
-                } else {
-                    ((JButton) e.getSource()).setText("Switch to Online");
-                }
-
             }
         };
         onOffButton.addActionListener(onOffListener);
@@ -215,9 +211,8 @@ public class CustomersWindow extends JFrame implements Window {
 
     @Override
     public void online(boolean online) {
-        updateCustomersView();
-
         if (online) {
+            updateCustomersView();
             for (JButton button : buttons) {
                 button.setEnabled(true);
             }

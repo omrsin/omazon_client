@@ -8,6 +8,8 @@ package client.listeners;
 import client.OmazonClient;
 import client.OmazonProducer;
 import client.listeners.ClientListener;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import windows.CustomersWindow;
 import windows.OrdersWindow;
 import windows.ProductsWindow;
@@ -30,7 +32,7 @@ public class ClNewListener extends ClientListener {
     @Override
     public void doOperation(String message) {
         System.out.println("Received message in clNew");
-
+        client.setLock(false);
         if (client.getWindowsToNotify().isEmpty()) {
             ProductsWindow window = new ProductsWindow(client);
             window.setBounds(40, 50, 500, 500);
@@ -55,19 +57,48 @@ public class ClNewListener extends ClientListener {
             public void doOperation(String message) {
                 System.out.println("Received Get Ready Message");
                 System.out.println("I am Ready I locked");
-                client.lock();
-                new ClientListener(client, "jms/clUpdate", new OmazonProducer(client, "jms/svReady", client.getUserName())) {
-
-                    @Override
-                    public void doOperation(String message) {
-                        System.out.println("Now I can update!");
-//                        client.getLatest();
-                        client.unlock();
-                        System.out.println("Client Unlocked!");
-                        new OmazonProducer(client, "jms/svUpdate", client.getUserName()).start();
-                        this.interrupt();
+                if (client.isOfflineOnReady()) {
+                    try {
+                        Thread.sleep(10000);
+                        client.setOnline(false);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(ClNewListener.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                }.start();
+                } else {
+                    client.lock();
+                    if (client.isHealthyDelayed()) {
+                        try {
+                            Thread.sleep(15000);
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(ClNewListener.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    new ClientListener(client, "jms/clUpdate", new OmazonProducer(client, "jms/svReady", client.getUserName())) {
+
+                        @Override
+                        public void doOperation(String message) {
+                            if (client.isOfflineOnUpdate()) {
+                                try {
+                                    client.unlock();
+                                    Thread.sleep(10000);
+                                    System.out.println("Send the offline message");
+                                    client.setOnline(false);
+                                    this.interrupt();
+                                } catch (InterruptedException ex) {
+                                    Logger.getLogger(ClNewListener.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            } else {
+                                System.out.println("Now I can update!"); //
+                                client.getLatest();
+                                client.unlock();
+                                System.out.println("Client Unlocked!");
+                                new OmazonProducer(client, "jms/svUpdate",
+                                        client.getUserName()).start();
+                                this.interrupt();
+                            }
+                        }
+                    }.start();
+                }
 
 //                this.interrupt();
             }

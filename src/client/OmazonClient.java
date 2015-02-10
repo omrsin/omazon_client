@@ -57,6 +57,73 @@ public class OmazonClient extends Thread {
     private SecureRandom random = new SecureRandom();
     private String userName;
     private ClientListener clReady;
+    private JButton onOffButton;
+    private boolean healthyDelayed;
+
+    public OmazonClient(boolean offlineOnReady, boolean offlineOnUpdate, boolean healthyDelayed) throws JMSException {
+        ClientConfig config = new DefaultClientConfig();
+        Client client = Client.create(config);
+        this.userName = nextSessionId();
+        this.offlineOnReady = offlineOnReady;
+        this.offlineOnUpdate = offlineOnUpdate;
+        this.healthyDelayed = healthyDelayed;
+        WebResource service = client.resource(REST_URI).path("webresources");
+        Hashtable table = new Hashtable();
+//        table.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.appserv.naming.S1ASCtxFactory");
+        table.put(Context.PROVIDER_URL, "iiop://127.0.0.1:3700");
+        try {
+            ctx = new InitialContext(table);
+            connectionFactory = (ConnectionFactory) lookup("jms/__defaultConnectionFactory");
+            connection = connectionFactory.createConnection();
+            connection.start();
+        } catch (NamingException ex) {
+            ex.printStackTrace();
+        }
+
+        gson = new Gson();
+        products = service.path("com.omazon.entities.products");
+        customers = service.path("com.omazon.entities.customers");
+        orders = service.path("com.omazon.entities.orders");
+        shipments = service.path("com.omazon.entities.shipments");
+
+    }
+
+    public boolean isHealthyDelayed() {
+        return healthyDelayed;
+    }
+
+    public void setHealthyDelayed(boolean healthyDelayed) {
+        this.healthyDelayed = healthyDelayed;
+    }
+    
+    
+
+    public JButton getOnOffButton() {
+        return onOffButton;
+    }
+
+    public void setOnOffButton(JButton onOffButton) {
+        this.onOffButton = onOffButton;
+    }
+
+    public boolean isOfflineOnReady() {
+        return offlineOnReady;
+    }
+
+    public void setOfflineOnReady(boolean offlineOnReady) {
+        this.offlineOnReady = offlineOnReady;
+    }
+
+    private boolean offlineOnReady;
+    private boolean offlineOnUpdate;
+
+    public boolean isOfflineOnUpdate() {
+        return offlineOnUpdate;
+    }
+
+    public void setOfflineOnUpdate(boolean offlineOnUpdate) {
+        this.offlineOnUpdate = offlineOnUpdate;
+    }
 
     public ClientListener getClReady() {
         return clReady;
@@ -103,8 +170,8 @@ public class OmazonClient extends Thread {
     public void setWindowsToNotify(List<Window> windowsToNotify) {
         this.windowsToNotify = windowsToNotify;
     }
-    
-    public List<Window> getWindowsToNotify(){
+
+    public List<Window> getWindowsToNotify() {
         return windowsToNotify;
     }
 
@@ -156,13 +223,16 @@ public class OmazonClient extends Thread {
         if (lock) {
             return;
         }
+
         this.online = online;
         if (this.online) {
+            onOffButton.setText("Switch to Offline");
             new ClNewListener(this).start();
             new OmazonProducer(this, "jms/svNew", userName).start();
 
         } else {
-            new OmazonProducer(this,"jms/svOffline", userName).start();
+            new OmazonProducer(this, "jms/svOffline", userName).start();
+            onOffButton.setText("Switch to Online");
             clReady.interrupt();
             for (Window window : windowsToNotify) {
                 window.online(false);
@@ -171,31 +241,6 @@ public class OmazonClient extends Thread {
     }
 
     // Connect using REST
-    public OmazonClient() throws JMSException {
-        ClientConfig config = new DefaultClientConfig();
-        Client client = Client.create(config);
-        userName = nextSessionId();
-        WebResource service = client.resource(REST_URI).path("webresources");
-        Hashtable table = new Hashtable();
-//        table.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.appserv.naming.S1ASCtxFactory");
-        table.put(Context.PROVIDER_URL, "iiop://127.0.0.1:3700");
-        try {
-            ctx = new InitialContext(table);
-            connectionFactory = (ConnectionFactory) lookup("jms/__defaultConnectionFactory");
-            connection = connectionFactory.createConnection();
-            connection.start();
-        } catch (NamingException ex) {
-            ex.printStackTrace();
-        }
-
-        gson = new Gson();
-        products = service.path("com.omazon.entities.products");
-        customers = service.path("com.omazon.entities.customers");
-        orders = service.path("com.omazon.entities.orders");
-        shipments = service.path("com.omazon.entities.shipments");
-
-    }
-
     public Connection getConnection() {
         return connection;
     }
@@ -339,7 +384,7 @@ public class OmazonClient extends Thread {
     }
 
     /**
-     * Use this methot to delete particular customer
+     * Use this method to delete particular customer
      *
      * @param customerId
      */
